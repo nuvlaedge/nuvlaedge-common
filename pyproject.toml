@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "nuvlaedge-common"
+version = "0.0.0a1"
+description = "Set of common libraries, scripts and tools for the NuvlaEdge microservices"
+authors = ["Nacho <nacho@sixsq.com>"]
+readme = "README.md"
+packages = [{include = "nuvlaedge"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
