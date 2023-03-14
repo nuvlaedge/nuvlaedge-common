@@ -1,13 +1,17 @@
 [tool.poetry]
 name = "nuvlaedge-common"
-version = "0.0.0a1"
+version = "0.0.1"
 description = "Set of common libraries, scripts and tools for the NuvlaEdge microservices"
 authors = ["Nacho <nacho@sixsq.com>"]
 readme = "README.md"
 packages = [{include = "nuvlaedge"}]
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "^3.8"
+pydantic = "^1.10.5"
+filelock = "^3.9.0"
+iterators = "^0.2.0"
+nuvla-api = "^3.0.8"
 
 
 [build-system]
