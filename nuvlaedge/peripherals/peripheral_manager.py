@@ -1,20 +1,20 @@
 """
 
 """
-import json
+from __future__ import annotations
 import logging
-import time
 from pathlib import Path
 from threading import Event, Thread
+from typing import Dict, List
 
-import filelock
+from pydantic import ValidationError
 from nuvla.api import Api as NuvlaClient
-from nuvla.api.models import CimiCollection, CimiResponse, CimiResource
 
-from nuvlaedge.constant_files import FILE_NAMES
-from nuvlaedge.constants import PERIPHERAL_RESOURCE_NAME
+from nuvlaedge.common.constant_files import FILE_NAMES
+from nuvlaedge.models.messages import NuvlaEdgeMessage
+from nuvlaedge.peripherals.peripheral_manager_db import PeripheralsDBManager
 from nuvlaedge.broker import NuvlaEdgeBroker
-from nuvlaedge.broker.models import NuvlaEdgeMessage
+from nuvlaedge.models.peripheral import PeripheralData
 
 
 class PeripheralManager(Thread):
@@ -25,141 +25,131 @@ class PeripheralManager(Thread):
 
     PERIPHERALS_LOCATION: Path = FILE_NAMES.PERIPHERALS_FOLDER
 
-    def __init__(self, persistence, broker: NuvlaEdgeBroker, nuvla_client, nuvlaedge_uuid: str):
+    def __init__(self, broker: NuvlaEdgeBroker, nuvla_client: NuvlaClient, nuvlaedge_uuid: str):
         super(PeripheralManager, self).__init__(daemon=True)
         self.logger: logging.Logger = logging.getLogger(self.__class__.__name__)
 
+        # Required to check the Nuvla database and filter present peripherals
         self._uuid: str = nuvlaedge_uuid
 
-        self.persistence = persistence
+        # Broker instance to consume messages from the peripherals
         self.broker: NuvlaEdgeBroker = broker
-        self.nuvla_client: NuvlaClient = nuvla_client
 
+        # Particular class to control and wrap the handling of peripherals
+        self.db: PeripheralsDBManager = PeripheralsDBManager(nuvla_client, nuvlaedge_uuid)
+
+        # Event to control the thread, time it and exit it
         self.exit_event: Event = Event()
 
         self.running_peripherals: set = set()
+        self.registered_peripherals: dict[str, PeripheralData] = {}
 
-        # This variable is updated either from the local registry or from Nuvla database
-        self.nuvla_registered_devices: dict = {}
-        self.local_registry_path: Path = FILE_NAMES.PERIPHERALS_FOLDER / 'local_registry.json'
-
-    def get_nuvla_registered_peripherals(self):
+    def update_running_managers(self):
         """
-
+        Checks which peripheral scanners are currently running
         :return:
         """
-        nuvla_peripherals: CimiCollection = self.nuvla_client.search('nuvlabox-peripheral',
-                                                                     filter=f'parent="{self._uuid}"')
-        self.nuvla_registered_devices = {dev.data['identifier']: dev.data for dev in nuvla_peripherals.resources}
+        self.logger.info(f'Getting peripheral status from: {FILE_NAMES.PERIPHERALS_FOLDER}')
 
-    def update_local_registry(self, devices: dict, add: set, delete: set, update: set):
+        # TODO: Keep a registry status of the last update of every peripheral instead of iterating folders
+        for f in FILE_NAMES.PERIPHERALS_FOLDER.iterdir():
+            if f.is_dir():
+                self.logger.info(f'{f} peripheral manager running')
+                self.running_peripherals.add(f)
+
+    def process_new_peripherals(self, new_peripherals: dict[str, PeripheralData]):
         """
-
-        :param devices:
-        :param add:
-        :param delete:
-        :param update:
+        Assess what to do with the new received peripherals: add, edit delete.
+        :param new_peripherals:
         :return:
         """
-        local_devices: dict = {}
-        peripherals_registered_file: Path = FILE_NAMES.PERIPHERALS_FOLDER / 'local_registry.json'
+        # Process unique identifiers to compare new with stored
+        new_identifiers = set(new_peripherals.keys())
+        present_identifiers = self.db.keys
 
-        with peripherals_registered_file.open('a') as file:
-            local_devices = json.load(file)
-            local_ids: set = set(local_devices.keys())
-            new_ids: set = set(devices.keys())
-            for i in new_ids - local_ids:
-                local_devices[devices.get(i).get('identifier')] = devices.get(i)
+        # Peripherals not registered in Nuvla but detected in the last iteration
+        to_add = new_identifiers - present_identifiers
+        if to_add:
+            self.db.add({i: new_peripherals[i] for i in to_add})
 
-            json.dump(local_devices, file)
+        # Peripherals registered in Nuvla no longer present in the systems
+        to_delete = present_identifiers - new_identifiers
+        if to_delete:
+            self.db.remove(to_delete)
 
-    def get_local_registry(self) -> dict:
+        # Peripherals registered and detected in the last iteration that need to check for changes
+        to_check = new_identifiers & present_identifiers
+        if to_check:
+            self.db.edit({i: new_peripherals[i] for i in to_check})
+
+    @property
+    def available_messages(self):
         """
-        Reads the local registry file. This exists to reduce as much as possible communication with Nuvla
-        :return:
+        Generator that allows to iterate over the latest messages of the peripheral mangers when present
+        :return: Yields the latest available message for each peripheral manager
         """
-        if not self.local_registry_path.exists() or self.local_registry_path.stat().st_size == 0:
-            return {}
+        # Iterate running peripherals
+        for peripheral_manager in self.running_peripherals:
+            # Consume messages from broker
+            new_devices: list[NuvlaEdgeMessage] = \
+                self.broker.consume(f'{self.PERIPHERALS_LOCATION.name}/{peripheral_manager.name}')
 
-        with self.local_registry_path.open('r') as file:
-            return json.load(file)
-
-    def delete_nuvla_peripherals(self, device_list: list[dict]):
-        """
-        Receives a list of peripherals whose id's are to be removed because they are no longer found in the current
-        NuvlaEdge
-        :param device_list:
-        :return:
-        """
-
-        for device in device_list:
-            if 'id' in device:
-                response: CimiResponse = self.nuvla_client.delete(device['id'])
-                # if response.data.get('status'):
-                print(response.data.get('status'))
-
-    def edit_nuvla_peripherals(self, device_list: list[dict]):
-        """
-
-        :param device_list:
-        :return:
-        """
-
-        for dev in device_list:
-            response: CimiResponse = self.nuvla_client.edit(dev['id'], dev)
-            self.logger.info(f'Status response for editing {dev["id"]}: {response.data.get("status")}')
-
-    def add_nuvla_peripheral(self, device_list: list):
-        """
-        Receives a list of peripherals whose id's are to be added
-        :param device_list:
-        :return:
-        """
-        for dev in device_list:
-            if 'identifier' not in dev:
-                self.logger.info(f'Trying to add an uncompleted peripheral device: {json.dumps(dev, indent=4)}')
+            # Skip empty messages or errors
+            if not new_devices:
                 continue
 
-            self.nuvla_client.add(PERIPHERAL_RESOURCE_NAME, dev)
+            try:
+                # Yield latest message
+                yield sorted(new_devices, key=lambda x: x.time)[0].data
+            except IndexError:
+                # We should never reach here, catch the possible index error to prevent the manager
+                # from dying due to broker errors
+                self.logger.warning(f'Error sorting messages from peripheral {peripheral_manager} channel')
 
-    def resolve_peripheral_devices(self, new_devices: list[NuvlaEdgeMessage]):
+    def join_new_peripherals(self, new_peripherals: List[Dict]) -> Dict[str, PeripheralData]:
         """
-        Receives a list of messages and process them sequentially performing the corresponding actions against nuvla
-        :param new_devices:
-        :return:
+        Takes a list of new received peripherals and rearranges them into a dictionary:
+        {
+            'per_identifier_1': {peripheral_data},
+            'per_identifier_2': {peripheral_data_2}
+        }
+        If any of the peripherals don't contain the compulsory fields, ignores it and reports as a warning
+        :param new_peripherals: Newly received peripherals
+        :return: A dictionary rearranging new peripherals.
         """
-        latest_devices = sorted(new_devices, key=lambda x: x.time)[0].data
-        latest_devs_keys = set(latest_devices.keys())
-        current_devs = set(self.nuvla_registered_devices.keys())
+        if not new_peripherals:
+            return {}
 
-        self.add_nuvla_peripheral([latest_devices.get(i) for i in latest_devs_keys - current_devs])
-        self.delete_nuvla_peripherals([latest_devices.get(i) for i in current_devs - latest_devs_keys])
-        self.edit_nuvla_peripherals([latest_devices.get(i) for i in latest_devs_keys & current_devs])
+        peripheral_acc: dict = {}
+        for manager_report in new_peripherals:
+            for identifier, data in manager_report.items():
+                try:
+                    peripheral_acc[identifier] = PeripheralData.parse_obj(data)
+                except ValidationError as ex:
+                    self.logger.exception(f'Error processing data from device {identifier}', ex)
+
+        return peripheral_acc
 
     def run(self) -> None:
         self.logger.info(f'Starting peripheral manager thread')
 
         while not self.exit_event.is_set():
-            # In the original implementation, every iteration required for every new device to contact Nuvla
-            self.get_nuvla_registered_peripherals()
+            self.logger.info(f'Scanning for detected devices')
+            self.update_running_managers()
 
-            for peripheral in self.running_peripherals:
-                self.logger.info(f'Reading new devices from {self.PERIPHERALS_LOCATION.name}/{peripheral}')
+            # New peripherals accumulator for different peripheral managers
+            new_peripherals = [m for m in self.available_messages]
 
-                new_devs = self.broker.consume(f'{self.PERIPHERALS_LOCATION.name}/{peripheral}')
-                if not new_devs:
-                    continue
+            # Decode all new messages at once. This function is an auxiliary tool for the DB to decode
+            # peripherals coming from Nuvla that can be reused here
+            new_peripherals = self.join_new_peripherals(new_peripherals)
 
-                self.resolve_peripheral_devices(new_devs)
-
-                self.logger.debug(f'New devices {new_devs}')
+            # Process the new peripherals data
+            self.process_new_peripherals(new_peripherals)
 
             self.exit_event.wait(self.REFRESH_RATE)
 
-        self.logger.debug('Ended peripheral manager loop')
-
-    def join(self, timeout: float | None = ...) -> None:
+    def join(self, timeout: float | None = REFRESH_RATE) -> None:
         self.logger.info(f'Exiting peripheral manager thread')
         self.exit_event.set()
-        super().join()
-
+        super().join(timeout=timeout)

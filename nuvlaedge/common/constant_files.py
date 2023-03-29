@@ -16,7 +16,7 @@ class FileConstants(object):
     VULNERABILITIES_FILE = 'vulnerabilities'
     CA = 'ca.pem'
     CERT = 'cert.pem'
-    KEY = 'key.pym'
+    KEY = 'key.pem'
     CONTEXT = '.context'
     PREVIOUS_NET_STATS_FILE = '.previous_net_stats'
     CONTAINER_STATS_JSON_FILE = 'docker_stats.json'
@@ -28,7 +28,8 @@ class FileConstants(object):
     VPN_CLIENT_CONF_FILE = 'vpn/nuvlaedge.conf'
 
     # Peripherals
-    PERIPHERALS_FOLDER = 'peripherals/'
+    PERIPHERALS_FOLDER = '.peripherals/'
+    LOCAL_PERIPHERAL_DB = PERIPHERALS_FOLDER + 'local_peripherals.json'
     NETWORK_PERIPHERAL = PERIPHERALS_FOLDER + 'network'
     BLUETOOTH_PERIPHERAL = PERIPHERALS_FOLDER + 'bluetooth'
     MODBUS_PERIPHERAL = PERIPHERALS_FOLDER + 'modbus'
@@ -48,4 +49,4 @@ class FileConstants(object):
         return Path(f'{self._root_fs}/{object.__getattribute__(self, item)}')
 
 
-FILE_NAMES = FileConstants(os.getenv('SHARED_DATA_VOLUME', '/tmp/nuvlaedge/shared/'))
+FILE_NAMES = FileConstants(os.getenv('SHARED_DATA_VOLUME', '/srv/nuvlaedge/shared/'))

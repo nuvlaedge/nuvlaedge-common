@@ -1,3 +1,4 @@
+from __future__ import annotations
 import json
 import logging
 import re
@@ -6,10 +7,10 @@ from datetime import datetime
 
 import filelock
 
-from nuvlaedge.broker.models import NuvlaEdgeMessage
+from nuvlaedge.models.messages import NuvlaEdgeMessage
 from nuvlaedge.broker import NuvlaEdgeBroker
-from nuvlaedge.constants import DATETIME_FORMAT
-from nuvlaedge.constant_files import FILE_NAMES
+from nuvlaedge.common.constants import DATETIME_FORMAT
+from nuvlaedge.common.constant_files import FILE_NAMES
 
 
 class MessageFormatError(Exception):
@@ -46,21 +47,23 @@ class FileBroker(NuvlaEdgeBroker):
         channel = self.root_path / Path(channel)
         self.logger.debug(f'Consuming from channel {channel}')
         if not channel.is_dir():
-            self.logger.info(f'Channel {channel} is not a directory')
+            self.logger.warning(f'Channel {channel} is not a directory')
             return []
 
         if not channel.exists():
-            self.logger.info(f'No channel registered as {channel}')
+            self.logger.warning(f'No channel registered as {channel}')
             return []
 
         if not any(channel.iterdir()):
             return []
 
+        # Lock the channel to prevent overlapping
         with filelock.FileLock(channel / (channel.name + '.lock')):
 
             channel = channel / self.BUFFER_NAME
             messages: list = []
             for message in channel.iterdir():
+                self.logger.debug(f'Message {message.name}')
                 message_time, sender = self.decode_message_from_file_name(message.name)
                 with message.open(mode='r') as file:
                     messages.append(NuvlaEdgeMessage(
@@ -73,6 +76,11 @@ class FileBroker(NuvlaEdgeBroker):
             return messages
 
     def create_channel(self, channel: Path):
+        """
+
+        :param channel:
+        :return:
+        """
         channel_buffer: Path = channel / self.BUFFER_NAME
         channel_buffer.mkdir(exist_ok=True, parents=True)
 
@@ -85,13 +93,15 @@ class FileBroker(NuvlaEdgeBroker):
             )
         )
 
+    # TODO: Generic function to write a file. It should probably go to common/utils and reuse the atomic writing
+    # from the agent
     @staticmethod
     def write_file(file_name: Path, data: dict):
         with file_name.open('w') as file:
             json.dump(data, file)
 
     def publish_from_message(self, channel: Path, message: NuvlaEdgeMessage) -> bool:
-        self.logger.debug(f'Writing message to {channel}')
+        self.logger.info(f'Writing message to {channel / self.BUFFER_NAME / self.compose_file_name(message.sender)}')
         self.write_file(
             channel / self.BUFFER_NAME / self.compose_file_name(message.sender),
             message.data
@@ -104,12 +114,13 @@ class FileBroker(NuvlaEdgeBroker):
         self.create_channel(channel)
 
         if not channel.exists():
-            self.logger.info(f'Folder {channel} does not exists and cannot be used as a channel, create it First')
+            self.logger.warning(f'Folder {channel} does not exists and cannot be used as a channel, create it First')
             return False
 
         if not channel.is_dir():
-            self.logger.info(f'Channel {channel} is not a directory')
+            self.logger.warning(f'Channel {channel} is not a directory')
             return False
+
         self.logger.debug(f'Publishing from {sender} towards channel {channel}')
         with filelock.FileLock(channel / (channel.name + '.lock')):
             if isinstance(data, dict):
