@@ -41,9 +41,9 @@ jobs:
 
       - name: Cache nuvlaedge common lib
         uses: actions/cache@v3
-        key: nuvlaedge-common-lib
-        with: |
+        with:
           path: dist/
+          key: nuvlaedge-common-lib
 
       # Use QeMu for multi-architecture build
       - name: Set up QEMU
