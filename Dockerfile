@@ -7,6 +7,7 @@ ARG GIT_BUILD_TIME
 ARG GITHUB_RUN_NUMBER
 ARG GITHUB_RUN_ID
 ARG PROJECT_URL
+ARG COMMON_LIBRARY_NAME
 
 LABEL git.branch=${GIT_BRANCH}
 LABEL git.commit.id=${GIT_COMMIT_ID}
@@ -23,6 +24,6 @@ LABEL org.opencontainers.image.description="Contains common software to serve as
 COPY LICENSE /opt/nuvlaedge/
 
 WORKDIR /opt/nuvlaedge/
-COPY dist/nuvlaedge_common-latest-py3-none-any.whl /tmp/nuvlaedge_common-latest-py3-none-any.whl
+COPY dist/${COMMON_LIBRARY_NAME} /tmp/${COMMON_LIBRARY_NAME}
 
-RUN pip install /tmp/nuvlaedge_common-latest-py3-none-any.whl
+RUN pip install /tmp/${COMMON_LIBRARY_NAME}

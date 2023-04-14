@@ -29,7 +29,9 @@ jobs:
       - name: Build package
         run: poetry build --format=wheel
 
-
+      - name: Find package name and version
+        run: |
+          export PACKAGE_NAME=$(ls nuvlaedge_common-*.whl)
       # Use QeMu for multi-architecture build
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
@@ -76,6 +78,7 @@ jobs:
             GITHUB_RUN_NUMBER=${{ github.run_number }}
             GITHUB_RUN_ID=${{ github.run_id }}
             PROJECT_URL=${{ github.server_url }}/${{ github.repository }}
+            COMMON_LIBRARY_NAME=${PACKAGE_NAME}
 
           tags: nuvladev/nuvlaedge-common:${{ github.ref_name }},nuvladev/nuvlaedge-common:latest
 
