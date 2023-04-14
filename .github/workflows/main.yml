@@ -39,12 +39,11 @@ jobs:
           cd dist/
           echo "PACKAGE_NAME=$(ls nuvlaedge_common-*.whl)" >> $GITHUB_ENV
 
-      - name: Archive distribution
-        uses: actions/upload-artifact@v3
-        with:
-          name: nuvlaedge-common-lib
-          path: |
-            dist/${{ env.PACKAGE_NAME }}
+      - name: Cache nuvlaedge common lib
+        uses: actions/cache@v3
+        key: nuvlaedge-common-lib
+        with: |
+          path: dist/
 
       # Use QeMu for multi-architecture build
       - name: Set up QEMU
