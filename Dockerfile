@@ -25,4 +25,4 @@ COPY LICENSE /opt/nuvlaedge/
 WORKDIR /opt/nuvlaedge/
 COPY dist/$COMMON_LIBRARY_NAME /tmp/$COMMON_LIBRARY_NAME
 
-RUN pip install /tmp/${COMMON_LIBRARY_NAME}
+RUN pip install /tmp/$COMMON_LIBRARY_NAME
