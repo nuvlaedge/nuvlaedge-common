@@ -31,7 +31,7 @@ jobs:
 
       - name: Find package name and version
         run: |
-          echo "PACKAGE_NAME=$(ls nuvlaedge_common-*.whl)" >> $GITHUB_ENV
+          echo "PACKAGE_NAME=$(ls dist/nuvlaedge_common-*.whl)" >> $GITHUB_ENV
 
       - name: Print me
         run: echo ${{ env.PACKAGE_NAME }}
