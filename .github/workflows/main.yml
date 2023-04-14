@@ -9,6 +9,10 @@ on:
   push:
     branches:
       - 'main'
+    paths:
+      - 'nuvlaedge/'
+      - 'tests/'
+      - '.github/workflows/main.yml'
 
 jobs:
   build-library:
