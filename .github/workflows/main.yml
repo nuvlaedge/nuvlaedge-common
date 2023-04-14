@@ -20,10 +20,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+
       - name: SetUp python interpreter
         uses: actions/setup-python@v4
         with:
           python-version: "3.8"
+          cache: 'pip'
 
       - name: SetUp poetry
         uses: abatilo/actions-poetry@v2
@@ -37,6 +39,12 @@ jobs:
         run: |
           cd dist/
           echo "PACKAGE_NAME=$(ls nuvlaedge_common-*.whl)" >> $GITHUB_ENV
+
+      - name: Install package to pip dependencies
+        run: |
+          pip install dist/$PACKAGE_NAME
+          
+
 
       # Use QeMu for multi-architecture build
       - name: Set up QEMU
