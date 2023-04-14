@@ -31,7 +31,8 @@ jobs:
 
       - name: Find package name and version
         run: |
-          echo "PACKAGE_NAME=$(ls dist/nuvlaedge_common-*.whl)" >> $GITHUB_ENV
+          cd dist/
+          echo "PACKAGE_NAME=$(ls nuvlaedge_common-*.whl)" >> $GITHUB_ENV
 
       # Use QeMu for multi-architecture build
       - name: Set up QEMU
