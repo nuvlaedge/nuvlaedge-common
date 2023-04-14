@@ -33,22 +33,24 @@ jobs:
         run: |
           echo "PACKAGE_NAME=$(ls nuvlaedge_common-*.whl)" >> $GITHUB_ENV
 
-      # Use QeMu for multi-architecture build
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-
-      # https://github.com/docker/setup-buildx-action
-      - name: Set up Docker Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@v2
-
-      - name: Login to Docker Hub
-        if: github.event_name != 'pull_request'
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
+      - name: Print me
+        run: echo ${{ env.PACKAGE_NAME }}
+#      # Use QeMu for multi-architecture build
+#      - name: Set up QEMU
+#        uses: docker/setup-qemu-action@v2
+#
+#      # https://github.com/docker/setup-buildx-action
+#      - name: Set up Docker Buildx
+#        id: buildx
+#        uses: docker/setup-buildx-action@v2
+#
+#      - name: Login to Docker Hub
+#        if: github.event_name != 'pull_request'
+#        uses: docker/login-action@v2
+#        with:
+#          username: ${{ secrets.DOCKER_USERNAME }}
+#          password: ${{ secrets.DOCKER_PASSWORD }}
+#
 #      - name: Docker meta
 #        id: metadata # you'll use this in the next step
 #        uses: docker/metadata-action@v3
@@ -65,21 +67,21 @@ jobs:
 #            type=semver,pattern={{major}}.{{minor}}
 #            type=semver,pattern={{major}}
 #            type=sha
-        
-      - name: Build and push
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          file: ./Dockerfile
-          platforms: linux/amd64,linux/arm/v7,linux/arm/v8,linux/arm64
-          build-args: |
-            GIT_BRANCH=${{ github.ref_name }}
-            GIT_BUILD_TIME=$(date --utc +%FT%T.%3NZ)
-            GIT_COMMIT_ID=${{ github.sha }}
-            GITHUB_RUN_NUMBER=${{ github.run_number }}
-            GITHUB_RUN_ID=${{ github.run_id }}
-            PROJECT_URL=${{ github.server_url }}/${{ github.repository }}
-            PACKAGE_NAME=${{ env.PACKAGE_NAME }}
-
-          tags: nuvladev/nuvlaedge-common:${{ github.ref_name }},nuvladev/nuvlaedge-common:latest
+#
+#      - name: Build and push
+#        uses: docker/build-push-action@v4
+#        with:
+#          context: .
+#          file: ./Dockerfile
+#          platforms: linux/amd64,linux/arm/v7,linux/arm/v8,linux/arm64
+#          build-args: |
+#            GIT_BRANCH=${{ github.ref_name }}
+#            GIT_BUILD_TIME=$(date --utc +%FT%T.%3NZ)
+#            GIT_COMMIT_ID=${{ github.sha }}
+#            GITHUB_RUN_NUMBER=${{ github.run_number }}
+#            GITHUB_RUN_ID=${{ github.run_id }}
+#            PROJECT_URL=${{ github.server_url }}/${{ github.repository }}
+#            PACKAGE_NAME=${{ env.PACKAGE_NAME }}
+#
+#          tags: nuvladev/nuvlaedge-common:${{ github.ref_name }},nuvladev/nuvlaedge-common:latest
 
