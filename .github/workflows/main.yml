@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - main
+      - workflow_prep
 
 jobs:
   build-library:
@@ -32,14 +32,6 @@ jobs:
       - name: Create standard latest release
         run: |
           mv ./dist/nuvlaedge_common* ./nuvlaedge_common-latest-py3-none-any.whl
-
-  build-base-image:
-    runs-on: ubuntu-latest
-
-    steps:
-      # Get the repository's code
-      - name: Checkout
-        uses: actions/checkout@v2
 
       # Use QeMu for multi-architecture build
       - name: Set up QEMU
