@@ -44,7 +44,7 @@ jobs:
         with:
           name: nuvlaedge-common-lib
           path: |
-            dist/$PACKAGE_NAME
+            dist/${{ env.PACKAGE_NAME }}
 
       # Use QeMu for multi-architecture build
       - name: Set up QEMU
