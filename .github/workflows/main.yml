@@ -82,5 +82,6 @@ jobs:
             PROJECT_URL=${{ github.server_url }}/${{ github.repository }}
             PACKAGE_NAME=${{ env.PACKAGE_NAME }}
 
-          tags: nuvladev/nuvlaedge-common:${{ github.ref_name }},nuvladev/nuvlaedge-common:latest
+          tags: nuvladev/nuvlaedge-base:${{ github.ref_name }},nuvladev/nuvlaedge-base:latest
+          push: true
 
