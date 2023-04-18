@@ -20,11 +20,25 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
 
       - name: SetUp python interpreter
         uses: actions/setup-python@v4
         with:
-          python-version: "3.8"
+          python-version: '3.8'
+
+      - name: Install tox
+        run: pip install tox
+
+      - name: Run tox
+        run: tox
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
       - name: SetUp poetry
         uses: abatilo/actions-poetry@v2
