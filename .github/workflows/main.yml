@@ -34,16 +34,17 @@ jobs:
       - name: Build package
         run: poetry build --format=wheel
 
-      - name: Find package name and version
-        run: |
-          cd dist/
-          echo "PACKAGE_NAME=$(ls nuvlaedge_common-*.whl)" >> $GITHUB_ENV
-
       - name: Cache nuvlaedge common lib
         uses: actions/cache@v3
         with:
           path: dist/
           key: nuvlaedge-common-lib
+
+      - name: Find package name and version
+        run: |
+          cd dist/
+          echo "PACKAGE_NAME=$(ls nuvlaedge_common-*.whl)" >> $GITHUB_ENV
+
 
       # Use QeMu for multi-architecture build
       - name: Set up QEMU
