@@ -1,0 +1,11 @@
+certifi==2022.12.7
+charset-normalizer==2.0.12
+filelock==3.9.0
+idna==3.4
+iterators==0.2.0
+nuvla-api==3.0.8
+pydantic==1.10.5
+pyyaml==6.0
+requests==2.27.1
+typing-extensions==4.5.0
+urllib3==1.26.14
