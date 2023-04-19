@@ -24,6 +24,6 @@ LABEL org.opencontainers.image.description="Contains common software to serve as
 COPY LICENSE /opt/nuvlaedge/
 
 WORKDIR /opt/nuvlaedge/
-COPY dist/${PACKAGE_NAME} /tmp/${PACKAGE_NAME}
+COPY ${PACKAGE_NAME} /tmp/${PACKAGE_NAME}
 
 RUN pip install /tmp/${PACKAGE_NAME}
