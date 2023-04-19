@@ -15,7 +15,19 @@ on:
       - '.github/workflows/main.yml'
 
 jobs:
+  tests:
+    name: Run unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: List repo
+        run: |
+          echo "Temporary unit tests replacement"
+
   build-library:
+    needs: tests
+    name: Build Common Library
     runs-on: ubuntu-latest
 
     steps:
@@ -26,25 +38,53 @@ jobs:
         with:
           python-version: "3.8"
 
-      - name: SetUp poetry
-        uses: abatilo/actions-poetry@v2
+      - name: Load cached poetry
+        uses: actions/cache@v2.1.6
         with:
-          poetry-version: "1.2.2"
+          path: ~/.local
+          key: dotlocal-${{ runner.os }}-${{ hashFiles('.github/workflows/main.yml') }}
 
-      - name: Build package
-        run: poetry build --format=wheel
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
 
-      - name: Cache nuvlaedge common lib
+      - name: Load cached venv
+        id: cached-poetry-dependencies
         uses: actions/cache@v3
         with:
-          path: dist/
-          key: nuvlaedge-common-lib
+          path: .venv
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
+
+      - name: Build package
+        run: |
+          source .venv/bin/activate
+          poetry build --format=wheel
 
       - name: Find package name and version
         run: |
           cd dist/
           echo "PACKAGE_NAME=$(ls nuvlaedge_common-*.whl)" >> $GITHUB_ENV
 
+      - name: Save artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: nuvlaedge-common-lib
+          path: dist/${{ env.PACKAGE_NAME }}
+
+  build-base-image:
+    needs: build-library
+    name: Build NE base image
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: nuvlaedge-common-lib
 
       # Use QeMu for multi-architecture build
       - name: Set up QEMU
