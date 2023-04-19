@@ -16,12 +16,6 @@ on:
       - '.github/workflows/main.yml'
 
 jobs:
-  echo-me:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Print something
-        run: echo "Goodbye World"
-
   tests:
     name: Run unit tests
     runs-on: ubuntu-latest
