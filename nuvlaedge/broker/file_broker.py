@@ -62,9 +62,11 @@ class FileBroker(NuvlaEdgeBroker):
 
             channel = channel / self.BUFFER_NAME
             messages: list = []
+
             for message in channel.iterdir():
                 self.logger.debug(f'Message {message.name}')
                 message_time, sender = self.decode_message_from_file_name(message.name)
+
                 with message.open(mode='r') as file:
                     messages.append(NuvlaEdgeMessage(
                         data=json.load(file),
@@ -125,7 +127,7 @@ class FileBroker(NuvlaEdgeBroker):
         with filelock.FileLock(channel / (channel.name + '.lock')):
             if isinstance(data, dict):
                 if not sender:
-                    raise Exception(f'Sender must be assigned when publishing from a dictionary')
+                    raise ValueError(f'Sender must be assigned when publishing from a dictionary')
                 return self.publish_from_data(channel, data, sender)
 
             else:
