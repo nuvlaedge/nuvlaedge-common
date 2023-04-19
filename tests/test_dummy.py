@@ -9,4 +9,4 @@ class TestDummy(unittest.TestCase):
         """Dummy test."""
         main = mock.Mock()
         main.return_value = None
-        assert None is main()
+        self.assertIsNone(main())
