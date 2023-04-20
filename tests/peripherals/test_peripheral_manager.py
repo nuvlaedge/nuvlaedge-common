@@ -57,13 +57,13 @@ class TestPeripheralManager(TestCase):
         self.mock_broker.consume.return_value = []
 
         for _ in self.test_manager.available_messages:
-            pass
+            continue
         self.assertEqual(self.mock_broker.consume.call_count, 2)
 
         with self.assertRaises(AttributeError):
             self.mock_broker.consume.return_value = ['not_a_good_message']
             for _ in self.test_manager.available_messages:
-                pass
+                continue
 
         sample_message = NuvlaEdgeMessage(
             sender='sender',

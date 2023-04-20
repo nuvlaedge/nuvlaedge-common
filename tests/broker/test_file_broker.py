@@ -27,7 +27,7 @@ class TestFileBroker(TestCase):
         # Test regex comparison
         with self.assertRaises(MessageFormatError) as context:
             self.test_broker.decode_message_from_file_name('non')
-            self.assertTrue(f'Filename non' in context.exception)
+            self.assertTrue('Filename non' in context.exception)
 
     @mock.patch('nuvlaedge.broker.file_broker.datetime')
     def test_compose_file_name(self, mock_datetime):

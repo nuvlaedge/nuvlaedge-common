@@ -127,7 +127,7 @@ class FileBroker(NuvlaEdgeBroker):
         with filelock.FileLock(channel / (channel.name + '.lock')):
             if isinstance(data, dict):
                 if not sender:
-                    raise ValueError(f'Sender must be assigned when publishing from a dictionary')
+                    raise ValueError('Sender must be assigned when publishing from a dictionary')
                 return self.publish_from_data(channel, data, sender)
 
             else:
