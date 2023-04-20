@@ -28,6 +28,19 @@ class Peripheral:
     def hash_discoveries(devices: dict) -> int:
         return hash(json.dumps(devices, sort_keys=True))
 
+    def run_single_iteration(self, run_peripheral: callable, **kwargs):
+        self.logger.info('Discovering peripherals')
+        discovered_peripherals: dict = run_peripheral(**kwargs)
+        # Maybe we should always publish, regardless of the previous device and let the manager decide what to
+        # do with the repetition
+        self.logger.info(f'Discovered peripheral KEYS: {list(discovered_peripherals.keys())}')
+
+        if discovered_peripherals:
+            self.logger.info(f'New devices discovered in {self._name} peripheral:  {discovered_peripherals.keys()}')
+            self.broker.publish(FILE_NAMES.PERIPHERALS_FOLDER.name + '/' + self._name,
+                                discovered_peripherals,
+                                self._name)
+
     def run(self, run_peripheral: callable, **kwargs):
         """
         Runs the peripheral telemetry function
@@ -35,19 +48,5 @@ class Peripheral:
         """
         e = Event()
         while True:
-            self.logger.info('Discovering peripherals')
-            discovered_peripherals: dict = run_peripheral(**kwargs)
-            # Maybe we should always publish, regardless of the previous device and let the manager decide what to
-            # do with the repetition
-            self.logger.info(f'Discovered peripheral KEYS: {list(discovered_peripherals.keys())}')
-            # if self.last_hash != self.hash_discoveries(discovered_peripherals) and discovered_peripherals:
-            if discovered_peripherals:
-                self.logger.info(f'New devices discovered in {self._name} peripheral:  {discovered_peripherals.keys()}')
-                self.broker.publish(FILE_NAMES.PERIPHERALS_FOLDER.name + '/' + self._name,
-                                    discovered_peripherals,
-                                    self._name)
-                # self.last_hash = self.hash_discoveries(discovered_peripherals)
-            # else:
-            #     self.logger.info(f'Nothing to do')
-
+            self.run_single_iteration(run_peripheral, **kwargs)
             e.wait(timeout=self._scanning_interval)

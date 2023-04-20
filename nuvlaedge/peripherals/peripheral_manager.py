@@ -69,6 +69,7 @@ class PeripheralManager(Thread):
 
         # Peripherals not registered in Nuvla but detected in the last iteration
         to_add = new_identifiers - present_identifiers
+
         if to_add:
             self.db.add({i: new_peripherals[i] for i in to_add})
 
@@ -93,7 +94,7 @@ class PeripheralManager(Thread):
             # Consume messages from broker
             new_devices: list[NuvlaEdgeMessage] = \
                 self.broker.consume(f'{self.PERIPHERALS_LOCATION.name}/{peripheral_manager.name}')
-
+            print(f'\n\n\n {new_devices} \n\n\n')
             # Skip empty messages or errors
             if not new_devices:
                 continue
