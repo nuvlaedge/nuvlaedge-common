@@ -15,6 +15,11 @@ iterators = "^0.2.0"
 nuvla-api = "^3.0.8"
 
 
+[tool.poetry.group.test.dependencies]
+pytest = "^7.3.1"
+pytest-cov = "^4.0.0"
+mock = "^5.0.2"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

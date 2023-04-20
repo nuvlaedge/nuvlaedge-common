@@ -69,6 +69,7 @@ class PeripheralManager(Thread):
 
         # Peripherals not registered in Nuvla but detected in the last iteration
         to_add = new_identifiers - present_identifiers
+
         if to_add:
             self.db.add({i: new_peripherals[i] for i in to_add})
 
@@ -125,8 +126,8 @@ class PeripheralManager(Thread):
             for identifier, data in manager_report.items():
                 try:
                     peripheral_acc[identifier] = PeripheralData.parse_obj(data)
-                except ValidationError as ex:
-                    self.logger.exception(f'Error processing data from device {identifier}', ex)
+                except ValidationError:
+                    self.logger.exception(f'Error processing data from device {identifier}')
 
         return peripheral_acc
 
