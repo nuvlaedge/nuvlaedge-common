@@ -94,7 +94,7 @@ class PeripheralManager(Thread):
             # Consume messages from broker
             new_devices: list[NuvlaEdgeMessage] = \
                 self.broker.consume(f'{self.PERIPHERALS_LOCATION.name}/{peripheral_manager.name}')
-            print(f'\n\n\n {new_devices} \n\n\n')
+
             # Skip empty messages or errors
             if not new_devices:
                 continue
@@ -127,7 +127,7 @@ class PeripheralManager(Thread):
                 try:
                     peripheral_acc[identifier] = PeripheralData.parse_obj(data)
                 except ValidationError as ex:
-                    self.logger.exception(f'Error processing data from device {identifier}', ex)
+                    self.logger.exception(f'Error processing data from device {identifier}')
 
         return peripheral_acc
 

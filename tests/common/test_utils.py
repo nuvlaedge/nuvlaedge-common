@@ -6,7 +6,7 @@ import mock
 from nuvlaedge.common.utils import timed_event
 
 
-class Test(TestCase):
+class TestUtils(TestCase):
     def setUp(self) -> None:
         self.timeout = 2
 

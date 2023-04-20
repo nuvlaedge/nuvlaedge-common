@@ -53,7 +53,7 @@ class PeripheralsDBManager:
     def synchronize(self):
         """
         Synchronizes the local database with the remote. Remote database will always prevail
-        :return:
+        :return: None
         """
         # Raise a warning if the systems are desynchronized
         # Retrieve all the resources related to this NuvlaEdge with the parent field
@@ -213,14 +213,14 @@ class PeripheralsDBManager:
         self.logger.info(f'After adding in the local DB, backup to file')
         self.update_local_storage()
 
-    def peripheral_expired(self, p: str) -> bool:
+    def peripheral_expired(self, peripheral_id: str) -> bool:
         """
         Given a peripheral identifier, checks if its last updated date is > EXPIRATION_TIME
-        :param p:
+        :param peripheral_id:
         :return:
         """
         now = datetime.now().timestamp()
-        then = self._latest_update.get(p).timestamp()
+        then = self._latest_update.get(peripheral_id).timestamp()
 
         return (now - then) > self.EXPIRATION_TIME
 

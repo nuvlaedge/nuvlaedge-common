@@ -1,12 +1,12 @@
 from pathlib import Path
+from datetime import datetime
 
 from unittest import TestCase
 import mock
 
-import nuvlaedge.peripherals.peripheral_manager_db
-from models.peripheral import PeripheralData
+from nuvlaedge.models.peripheral import PeripheralData
+from nuvlaedge.models.messages import NuvlaEdgeMessage
 from nuvlaedge.peripherals.peripheral_manager import PeripheralManager, PeripheralsDBManager
-from nuvlaedge.broker.file_broker import FileBroker
 
 
 class TestPeripheralManager(TestCase):
@@ -31,9 +31,6 @@ class TestPeripheralManager(TestCase):
 
     def test_process_new_peripherals(self):
         test_peripherals = {'p1': PeripheralData(identifier='id', available=True, classes=['myClass'])}
-        # self.mock_broker = mock.Mock()
-        # self.mock_nuvla = mock.Mock()
-        # self.test_manager = PeripheralManager(self.mock_broker, self.mock_nuvla, 'uuid')
 
         with mock.patch.object(PeripheralsDBManager, 'add') as mock_add, \
             mock.patch.object(PeripheralsDBManager, 'remove') as mock_remove, \
@@ -63,16 +60,39 @@ class TestPeripheralManager(TestCase):
             pass
         self.assertEqual(self.mock_broker.consume.call_count, 2)
 
-        with self.assertRaises(TypeError):
-            self.mock_broker.consume.return_value = ['not_good_type']
+        with self.assertRaises(AttributeError):
+            self.mock_broker.consume.return_value = ['not_a_good_message']
             for _ in self.test_manager.available_messages:
                 pass
 
+        sample_message = NuvlaEdgeMessage(
+            sender='sender',
+            data={'id': 'idx'},
+            time=datetime.now())
+        self.mock_broker.consume.return_value  = [sample_message]
+
+        for i in self.test_manager.available_messages:
+            self.assertEqual(i, {'id': 'idx'})
+
     def test_join_new_peripherals(self):
+
         self.assertEqual({}, self.test_manager.join_new_peripherals([]))
 
-    def test_run(self):
-        self.fail()
+        sample_peripheral = {
+            'identifier': 'idx',
+            'available': True,
+            'classes': ['net']
+        }
 
-    def test_join(self):
-        self.fail()
+        self.assertEqual(
+            {'idx': PeripheralData.parse_obj(sample_peripheral)},
+            self.test_manager.join_new_peripherals([{'idx': sample_peripheral}])
+        )
+        mock_ex = mock.Mock()
+
+        self.test_manager.logger = mock_ex
+        self.test_manager.logger.exception.return_value = True
+
+        sample_peripheral['classes'] = 'notalist'
+        self.test_manager.join_new_peripherals([sample_peripheral])
+        self.assertEqual(3, self.test_manager.logger.exception.call_count)
