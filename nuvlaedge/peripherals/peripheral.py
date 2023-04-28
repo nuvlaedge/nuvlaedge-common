@@ -33,7 +33,6 @@ class Peripheral:
         discovered_peripherals: dict = run_peripheral(**kwargs)
         # Maybe we should always publish, regardless of the previous device and let the manager decide what to
         # do with the repetition
-        self.logger.info(f'Discovered peripheral KEYS: {list(discovered_peripherals.keys())}')
 
         if discovered_peripherals:
             self.logger.info(f'New devices discovered in {self._name} peripheral:  {discovered_peripherals.keys()}')
